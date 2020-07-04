@@ -8,6 +8,8 @@
 
 可以参考 [TiDB 源码阅读系列之 TiDB SQL Parser 的实现](https://pingcap.com/blog-cn/tidb-source-code-reading-5/)。
 
+看了上面的文章还是啥也不会啊（逃，还是先熟悉熟悉LEX & YACC 吧 [Lex and YACC primer/HOWTO](https://berthub.eu/lex-yacc/cvs/lexyacc.pdf)
+
 ## 作业描述
 
 完成 `JoinTable` 的实现，你可以利用 parser test 里失败的测试确定需要补充哪些语法部分。
