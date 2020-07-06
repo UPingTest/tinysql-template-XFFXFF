@@ -65,26 +65,26 @@ func (s *testIntegrationSuite) TestBitColErrorMessage(c *C) {
 	tk.MustGetErrCode("create table bit_col_t (a bit(65))", mysql.ErrTooBigDisplaywidth)
 }
 
-func (s *testIntegrationSuite) TestPushLimitDownIndexLookUpReader(c *C) {
-	tk := testkit.NewTestKit(c, s.store)
+// func (s *testIntegrationSuite) TestPushLimitDownIndexLookUpReader(c *C) {
+// 	tk := testkit.NewTestKit(c, s.store)
 
-	tk.MustExec("use test")
-	tk.MustExec("drop table if exists tbl")
-	tk.MustExec("create table tbl(a int, b int, c int, key idx_b_c(b,c))")
-	tk.MustExec("insert into tbl values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5)")
-	tk.MustExec("analyze table tbl")
+// 	tk.MustExec("use test")
+// 	tk.MustExec("drop table if exists tbl")
+// 	tk.MustExec("create table tbl(a int, b int, c int, key idx_b_c(b,c))")
+// 	tk.MustExec("insert into tbl values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5)")
+// 	tk.MustExec("analyze table tbl")
 
-	var input []string
-	var output []struct {
-		SQL  string
-		Plan []string
-	}
-	s.testData.GetTestCases(c, &input, &output)
-	for i, tt := range input {
-		s.testData.OnRecord(func() {
-			output[i].SQL = tt
-			output[i].Plan = s.testData.ConvertRowsToStrings(tk.MustQuery(tt).Rows())
-		})
-		tk.MustQuery(tt).Check(testkit.Rows(output[i].Plan...))
-	}
-}
+// 	var input []string
+// 	var output []struct {
+// 		SQL  string
+// 		Plan []string
+// 	}
+// 	s.testData.GetTestCases(c, &input, &output)
+// 	for i, tt := range input {
+// 		s.testData.OnRecord(func() {
+// 			output[i].SQL = tt
+// 			output[i].Plan = s.testData.ConvertRowsToStrings(tk.MustQuery(tt).Rows())
+// 		})
+// 		tk.MustQuery(tt).Check(testkit.Rows(output[i].Plan...))
+// 	}
+// }

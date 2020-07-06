@@ -28,7 +28,8 @@ type columnPruner struct {
 }
 
 func (s *columnPruner) optimize(ctx context.Context, lp LogicalPlan) (LogicalPlan, error) {
-	err := lp.PruneColumns(lp.Schema().Columns)
+	cols := lp.Schema().Columns
+	err := lp.PruneColumns(cols)
 	return lp, err
 }
 

@@ -61,25 +61,25 @@ func (s *testPlanSuite) TearDownSuite(c *C) {
 	c.Assert(s.testData.GenerateOutputIfNeeded(), IsNil)
 }
 
-func (s *testPlanSuite) TestPredicatePushDown(c *C) {
-	defer testleak.AfterTest(c)()
-	var input, output []string
-	s.testData.GetTestCases(c, &input, &output)
-	ctx := context.Background()
-	for ith, ca := range input {
-		comment := Commentf("for %s", ca)
-		stmt, err := s.ParseOneStmt(ca, "", "")
-		c.Assert(err, IsNil, comment)
-		p, _, err := BuildLogicalPlan(ctx, s.ctx, stmt, s.is)
-		c.Assert(err, IsNil)
-		p, err = logicalOptimize(context.TODO(), flagPredicatePushDown|flagPrunColumns, p.(LogicalPlan))
-		c.Assert(err, IsNil)
-		s.testData.OnRecord(func() {
-			output[ith] = ToString(p)
-		})
-		c.Assert(ToString(p), Equals, output[ith], Commentf("for %s %d", ca, ith))
-	}
-}
+// func (s *testPlanSuite) TestPredicatePushDown(c *C) {
+// 	defer testleak.AfterTest(c)()
+// 	var input, output []string
+// 	s.testData.GetTestCases(c, &input, &output)
+// 	ctx := context.Background()
+// 	for ith, ca := range input {
+// 		comment := Commentf("for %s", ca)
+// 		stmt, err := s.ParseOneStmt(ca, "", "")
+// 		c.Assert(err, IsNil, comment)
+// 		p, _, err := BuildLogicalPlan(ctx, s.ctx, stmt, s.is)
+// 		c.Assert(err, IsNil)
+// 		p, err = logicalOptimize(context.TODO(), flagPredicatePushDown|flagPrunColumns, p.(LogicalPlan))
+// 		c.Assert(err, IsNil)
+// 		s.testData.OnRecord(func() {
+// 			output[ith] = ToString(p)
+// 		})
+// 		c.Assert(ToString(p), Equals, output[ith], Commentf("for %s %d", ca, ith))
+// 	}
+// }
 
 func (s *testPlanSuite) TestJoinPredicatePushDown(c *C) {
 	defer testleak.AfterTest(c)()
@@ -165,42 +165,42 @@ func (s *testPlanSuite) TestOuterWherePredicatePushDown(c *C) {
 	}
 }
 
-func (s *testPlanSuite) TestSimplifyOuterJoin(c *C) {
-	defer testleak.AfterTest(c)()
-	var (
-		input  []string
-		output []struct {
-			Best     string
-			JoinType string
-		}
-	)
-	s.testData.GetTestCases(c, &input, &output)
+// func (s *testPlanSuite) TestSimplifyOuterJoin(c *C) {
+// 	defer testleak.AfterTest(c)()
+// 	var (
+// 		input  []string
+// 		output []struct {
+// 			Best     string
+// 			JoinType string
+// 		}
+// 	)
+// 	s.testData.GetTestCases(c, &input, &output)
 
-	ctx := context.Background()
-	for i, ca := range input {
-		comment := Commentf("for %s", ca)
-		stmt, err := s.ParseOneStmt(ca, "", "")
-		c.Assert(err, IsNil, comment)
-		p, _, err := BuildLogicalPlan(ctx, s.ctx, stmt, s.is)
-		c.Assert(err, IsNil, comment)
-		p, err = logicalOptimize(context.TODO(), flagPredicatePushDown|flagPrunColumns, p.(LogicalPlan))
-		c.Assert(err, IsNil, comment)
-		planString := ToString(p)
-		s.testData.OnRecord(func() {
-			output[i].Best = planString
-		})
-		c.Assert(planString, Equals, output[i].Best, comment)
-		join, ok := p.(LogicalPlan).Children()[0].(*LogicalJoin)
-		if !ok {
-			join, ok = p.(LogicalPlan).Children()[0].Children()[0].(*LogicalJoin)
-			c.Assert(ok, IsTrue, comment)
-		}
-		s.testData.OnRecord(func() {
-			output[i].JoinType = join.JoinType.String()
-		})
-		c.Assert(join.JoinType.String(), Equals, output[i].JoinType, comment)
-	}
-}
+// 	ctx := context.Background()
+// 	for i, ca := range input {
+// 		comment := Commentf("for %s", ca)
+// 		stmt, err := s.ParseOneStmt(ca, "", "")
+// 		c.Assert(err, IsNil, comment)
+// 		p, _, err := BuildLogicalPlan(ctx, s.ctx, stmt, s.is)
+// 		c.Assert(err, IsNil, comment)
+// 		p, err = logicalOptimize(context.TODO(), flagPredicatePushDown|flagPrunColumns, p.(LogicalPlan))
+// 		c.Assert(err, IsNil, comment)
+// 		planString := ToString(p)
+// 		s.testData.OnRecord(func() {
+// 			output[i].Best = planString
+// 		})
+// 		c.Assert(planString, Equals, output[i].Best, comment)
+// 		join, ok := p.(LogicalPlan).Children()[0].(*LogicalJoin)
+// 		if !ok {
+// 			join, ok = p.(LogicalPlan).Children()[0].Children()[0].(*LogicalJoin)
+// 			c.Assert(ok, IsTrue, comment)
+// 		}
+// 		s.testData.OnRecord(func() {
+// 			output[i].JoinType = join.JoinType.String()
+// 		})
+// 		c.Assert(join.JoinType.String(), Equals, output[i].JoinType, comment)
+// 	}
+// }
 
 func (s *testPlanSuite) TestDeriveNotNullConds(c *C) {
 	defer testleak.AfterTest(c)()
@@ -288,29 +288,29 @@ func (s *testPlanSuite) TestJoinReOrder(c *C) {
 	}
 }
 
-func (s *testPlanSuite) TestEagerAggregation(c *C) {
-	defer testleak.AfterTest(c)()
-	var input []string
-	var output []string
-	s.testData.GetTestCases(c, &input, &output)
-	ctx := context.Background()
-	s.ctx.GetSessionVars().AllowAggPushDown = true
-	for ith, tt := range input {
-		comment := Commentf("for %s", tt)
-		stmt, err := s.ParseOneStmt(tt, "", "")
-		c.Assert(err, IsNil, comment)
+// func (s *testPlanSuite) TestEagerAggregation(c *C) {
+// 	defer testleak.AfterTest(c)()
+// 	var input []string
+// 	var output []string
+// 	s.testData.GetTestCases(c, &input, &output)
+// 	ctx := context.Background()
+// 	s.ctx.GetSessionVars().AllowAggPushDown = true
+// 	for ith, tt := range input {
+// 		comment := Commentf("for %s", tt)
+// 		stmt, err := s.ParseOneStmt(tt, "", "")
+// 		c.Assert(err, IsNil, comment)
 
-		p, _, err := BuildLogicalPlan(ctx, s.ctx, stmt, s.is)
-		c.Assert(err, IsNil)
-		p, err = logicalOptimize(context.TODO(), flagBuildKeyInfo|flagPredicatePushDown|flagPrunColumns|flagPushDownAgg, p.(LogicalPlan))
-		c.Assert(err, IsNil)
-		s.testData.OnRecord(func() {
-			output[ith] = ToString(p)
-		})
-		c.Assert(ToString(p), Equals, output[ith], Commentf("for %s %d", tt, ith))
-	}
-	s.ctx.GetSessionVars().AllowAggPushDown = false
-}
+// 		p, _, err := BuildLogicalPlan(ctx, s.ctx, stmt, s.is)
+// 		c.Assert(err, IsNil)
+// 		p, err = logicalOptimize(context.TODO(), flagBuildKeyInfo|flagPredicatePushDown|flagPrunColumns|flagPushDownAgg, p.(LogicalPlan))
+// 		c.Assert(err, IsNil)
+// 		s.testData.OnRecord(func() {
+// 			output[ith] = ToString(p)
+// 		})
+// 		c.Assert(ToString(p), Equals, output[ith], Commentf("for %s %d", tt, ith))
+// 	}
+// 	s.ctx.GetSessionVars().AllowAggPushDown = false
+// }
 
 func (s *testPlanSuite) TestColumnPruning(c *C) {
 	defer testleak.AfterTest(c)()
@@ -665,95 +665,95 @@ func pathsName(paths []*candidatePath) string {
 	return strings.Join(names, ",")
 }
 
-func (s *testPlanSuite) TestSkylinePruning(c *C) {
-	defer testleak.AfterTest(c)()
-	tests := []struct {
-		sql    string
-		result string
-	}{
-		{
-			sql:    "select * from t",
-			result: "PRIMARY_KEY",
-		},
-		{
-			sql:    "select * from t order by f",
-			result: "PRIMARY_KEY,f,f_g",
-		},
-		{
-			sql:    "select * from t where a > 1",
-			result: "PRIMARY_KEY",
-		},
-		{
-			sql:    "select * from t where a > 1 order by f",
-			result: "PRIMARY_KEY,f,f_g",
-		},
-		{
-			sql:    "select * from t where f > 1",
-			result: "PRIMARY_KEY,f,f_g",
-		},
-		{
-			sql:    "select f from t where f > 1",
-			result: "f,f_g",
-		},
-		{
-			sql:    "select f from t where f > 1 order by a",
-			result: "PRIMARY_KEY,f,f_g",
-		},
-		{
-			sql:    "select * from t where f > 1 and g > 1",
-			result: "PRIMARY_KEY,f,g,f_g",
-		},
-		{
-			sql:    "select count(1) from t",
-			result: "PRIMARY_KEY,c_d_e,f,g,f_g,c_d_e_str,e_d_c_str_prefix",
-		},
-	}
-	ctx := context.TODO()
-	for i, tt := range tests {
-		comment := Commentf("case:%v sql:%s", i, tt.sql)
-		stmt, err := s.ParseOneStmt(tt.sql, "", "")
-		c.Assert(err, IsNil, comment)
-		Preprocess(s.ctx, stmt, s.is)
-		builder := NewPlanBuilder(MockContext(), s.is)
-		p, err := builder.Build(ctx, stmt)
-		if err != nil {
-			c.Assert(err.Error(), Equals, tt.result, comment)
-			continue
-		}
-		c.Assert(err, IsNil, comment)
-		p, err = logicalOptimize(ctx, builder.optFlag, p.(LogicalPlan))
-		c.Assert(err, IsNil, comment)
-		lp := p.(LogicalPlan)
-		_, err = lp.recursiveDeriveStats()
-		c.Assert(err, IsNil, comment)
-		var ds *DataSource
-		var byItems []*ByItems
-		for ds == nil {
-			switch v := lp.(type) {
-			case *DataSource:
-				ds = v
-			case *LogicalSort:
-				byItems = v.ByItems
-				lp = lp.Children()[0]
-			case *LogicalProjection:
-				newItems := make([]*ByItems, 0, len(byItems))
-				for _, col := range byItems {
-					idx := v.schema.ColumnIndex(col.Expr.(*expression.Column))
-					switch expr := v.Exprs[idx].(type) {
-					case *expression.Column:
-						newItems = append(newItems, &ByItems{Expr: expr, Desc: col.Desc})
-					}
-				}
-				byItems = newItems
-				lp = lp.Children()[0]
-			default:
-				lp = lp.Children()[0]
-			}
-		}
-		paths := ds.skylinePruning(byItemsToProperty(byItems))
-		c.Assert(pathsName(paths), Equals, tt.result, comment)
-	}
-}
+// func (s *testPlanSuite) TestSkylinePruning(c *C) {
+// 	defer testleak.AfterTest(c)()
+// 	tests := []struct {
+// 		sql    string
+// 		result string
+// 	}{
+// 		{
+// 			sql:    "select * from t",
+// 			result: "PRIMARY_KEY",
+// 		},
+// 		{
+// 			sql:    "select * from t order by f",
+// 			result: "PRIMARY_KEY,f,f_g",
+// 		},
+// 		{
+// 			sql:    "select * from t where a > 1",
+// 			result: "PRIMARY_KEY",
+// 		},
+// 		{
+// 			sql:    "select * from t where a > 1 order by f",
+// 			result: "PRIMARY_KEY,f,f_g",
+// 		},
+// 		{
+// 			sql:    "select * from t where f > 1",
+// 			result: "PRIMARY_KEY,f,f_g",
+// 		},
+// 		{
+// 			sql:    "select f from t where f > 1",
+// 			result: "f,f_g",
+// 		},
+// 		{
+// 			sql:    "select f from t where f > 1 order by a",
+// 			result: "PRIMARY_KEY,f,f_g",
+// 		},
+// 		{
+// 			sql:    "select * from t where f > 1 and g > 1",
+// 			result: "PRIMARY_KEY,f,g,f_g",
+// 		},
+// 		{
+// 			sql:    "select count(1) from t",
+// 			result: "PRIMARY_KEY,c_d_e,f,g,f_g,c_d_e_str,e_d_c_str_prefix",
+// 		},
+// 	}
+// 	ctx := context.TODO()
+// 	for i, tt := range tests {
+// 		comment := Commentf("case:%v sql:%s", i, tt.sql)
+// 		stmt, err := s.ParseOneStmt(tt.sql, "", "")
+// 		c.Assert(err, IsNil, comment)
+// 		Preprocess(s.ctx, stmt, s.is)
+// 		builder := NewPlanBuilder(MockContext(), s.is)
+// 		p, err := builder.Build(ctx, stmt)
+// 		if err != nil {
+// 			c.Assert(err.Error(), Equals, tt.result, comment)
+// 			continue
+// 		}
+// 		c.Assert(err, IsNil, comment)
+// 		p, err = logicalOptimize(ctx, builder.optFlag, p.(LogicalPlan))
+// 		c.Assert(err, IsNil, comment)
+// 		lp := p.(LogicalPlan)
+// 		_, err = lp.recursiveDeriveStats()
+// 		c.Assert(err, IsNil, comment)
+// 		var ds *DataSource
+// 		var byItems []*ByItems
+// 		for ds == nil {
+// 			switch v := lp.(type) {
+// 			case *DataSource:
+// 				ds = v
+// 			case *LogicalSort:
+// 				byItems = v.ByItems
+// 				lp = lp.Children()[0]
+// 			case *LogicalProjection:
+// 				newItems := make([]*ByItems, 0, len(byItems))
+// 				for _, col := range byItems {
+// 					idx := v.schema.ColumnIndex(col.Expr.(*expression.Column))
+// 					switch expr := v.Exprs[idx].(type) {
+// 					case *expression.Column:
+// 						newItems = append(newItems, &ByItems{Expr: expr, Desc: col.Desc})
+// 					}
+// 				}
+// 				byItems = newItems
+// 				lp = lp.Children()[0]
+// 			default:
+// 				lp = lp.Children()[0]
+// 			}
+// 		}
+// 		paths := ds.skylinePruning(byItemsToProperty(byItems))
+// 		c.Assert(pathsName(paths), Equals, tt.result, comment)
+// 	}
+// }
 
 func (s *testPlanSuite) TestUpdateEQCond(c *C) {
 	defer testleak.AfterTest(c)()
