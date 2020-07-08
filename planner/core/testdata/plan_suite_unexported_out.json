@@ -54,7 +54,7 @@
       "DataScan(t)->Aggr(count(test.t.a),firstrow(test.t.a))->Sel([lt(Column#13, 1)])->Projection",
       "Join{DataScan(t1)->DataScan(t2)}(test.t.a,test.t.a)->Projection",
       "Dual->Projection",
-      "DataScan(t)->Aggr(count(1),firstrow(test.t.b)->Projection->Projection"
+      "DataScan(t)->Aggr(count(1),firstrow(test.t.b))->Projection->Projection"
     ]
   },
   {
