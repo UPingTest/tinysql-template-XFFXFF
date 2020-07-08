@@ -56,7 +56,8 @@
       // issue #3873
       "select t1.a, t2.a from t as t1 left join t as t2 on t1.a = t2.a where t1.a < 1.0",
       // issue #7728
-      "select * from t t1 join t t2 on t1.a = t2.a where t2.a = null"
+      "select * from t t1 join t t2 on t1.a = t2.a where t2.a = null",
+      "select * from (select count(*), b from t group by b) tmp_t where b > 1"
     ]
   },
   {

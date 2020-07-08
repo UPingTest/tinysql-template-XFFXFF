@@ -61,25 +61,26 @@ func (s *testPlanSuite) TearDownSuite(c *C) {
 	c.Assert(s.testData.GenerateOutputIfNeeded(), IsNil)
 }
 
-// func (s *testPlanSuite) TestPredicatePushDown(c *C) {
-// 	defer testleak.AfterTest(c)()
-// 	var input, output []string
-// 	s.testData.GetTestCases(c, &input, &output)
-// 	ctx := context.Background()
-// 	for ith, ca := range input {
-// 		comment := Commentf("for %s", ca)
-// 		stmt, err := s.ParseOneStmt(ca, "", "")
-// 		c.Assert(err, IsNil, comment)
-// 		p, _, err := BuildLogicalPlan(ctx, s.ctx, stmt, s.is)
-// 		c.Assert(err, IsNil)
-// 		p, err = logicalOptimize(context.TODO(), flagPredicatePushDown|flagPrunColumns, p.(LogicalPlan))
-// 		c.Assert(err, IsNil)
-// 		s.testData.OnRecord(func() {
-// 			output[ith] = ToString(p)
-// 		})
-// 		c.Assert(ToString(p), Equals, output[ith], Commentf("for %s %d", ca, ith))
-// 	}
-// }
+func (s *testPlanSuite) TestPredicatePushDown(c *C) {
+	defer testleak.AfterTest(c)()
+	var input, output []string
+	s.testData.GetTestCases(c, &input, &output)
+	ctx := context.Background()
+	for ith, ca := range input {
+		comment := Commentf("for %s", ca)
+		stmt, err := s.ParseOneStmt(ca, "", "")
+		c.Assert(err, IsNil, comment)
+		p, _, err := BuildLogicalPlan(ctx, s.ctx, stmt, s.is)
+		fmt.Println(ToString(p))
+		c.Assert(err, IsNil)
+		p, err = logicalOptimize(context.TODO(), flagPredicatePushDown|flagPrunColumns, p.(LogicalPlan))
+		c.Assert(err, IsNil)
+		s.testData.OnRecord(func() {
+			output[ith] = ToString(p)
+		})
+		c.Assert(ToString(p), Equals, output[ith], Commentf("for %s %d", ca, ith))
+	}
+}
 
 func (s *testPlanSuite) TestJoinPredicatePushDown(c *C) {
 	defer testleak.AfterTest(c)()
