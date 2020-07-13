@@ -20,6 +20,7 @@ import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb/expression"
 	plannercore "github.com/pingcap/tidb/planner/core"
+	"github.com/pingcap/tidb/types"
 	"github.com/pingcap/tidb/util"
 	"github.com/pingcap/tidb/util/chunk"
 	"github.com/pingcap/tidb/util/codec"
@@ -154,6 +155,32 @@ func (e *HashJoinExec) fetchAndBuildHashTable(ctx context.Context) error {
 	// You'll need to store the hash table in `e.rowContainer`
 	// and you can call `newHashRowContainer` in `executor/hash_table.go` to build it.
 	// In this stage you can only assign value for `e.rowContainer` without changing any value of the `HashJoinExec`.
+	maxChunkSize := e.ctx.GetSessionVars().MaxChunkSize
+	innerKeyColIdx := make([]int, len(e.innerKeys))
+	innerKeyColTypes := make([]*types.FieldType, len(e.innerKeys))
+	for i := range e.innerKeys {
+		innerKeyColIdx[i] = e.innerKeys[i].Index
+		innerKeyColTypes[i] = e.innerKeys[i].RetType
+	}
+	hCtx := &hashContext{
+		allTypes:  innerKeyColTypes,
+		keyColIdx: innerKeyColIdx,
+	}
+	initList := chunk.NewList(innerKeyColTypes, maxChunkSize, maxChunkSize)
+	e.rowContainer = newHashRowContainer(e.ctx, int(e.innerSideEstCount), hCtx, initList)
+
+	for {
+		chk := chunk.NewChunkWithCapacity(e.innerSideExec.base().retFieldTypes, maxChunkSize)
+		err := Next(ctx, e.innerSideExec, chk)
+		if err != nil {
+			return err
+		}
+		if chk.NumRows() == 0 {
+			break
+		}
+		e.rowContainer.PutChunk(chk)
+	}
+
 	return nil
 }
 
