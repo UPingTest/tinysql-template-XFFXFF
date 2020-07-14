@@ -158,10 +158,14 @@ func (e *HashJoinExec) fetchAndBuildHashTable(ctx context.Context) error {
 	// In this stage you can only assign value for `e.rowContainer` without changing any value of the `HashJoinExec`.
 	maxChunkSize := e.ctx.GetSessionVars().MaxChunkSize
 	innerKeyColIdx := make([]int, len(e.innerKeys))
-	innerKeyColTypes := make([]*types.FieldType, len(e.innerKeys))
+	// innerKeyColTypes := make([]*types.FieldType, len(e.innerKeys))
 	for i := range e.innerKeys {
 		innerKeyColIdx[i] = e.innerKeys[i].Index
-		innerKeyColTypes[i] = e.innerKeys[i].RetType
+		// innerKeyColTypes[i] = e.innerKeys[i].RetType
+	}
+	innerKeyColTypes := make([]*types.FieldType, 0, len(retTypes(e.innerSideExec)))
+	for _, tp := range retTypes(e.innerSideExec) {
+		innerKeyColTypes = append(innerKeyColTypes, tp.Clone())
 	}
 	hCtx := &hashContext{
 		allTypes:  innerKeyColTypes,
@@ -291,10 +295,14 @@ func (e *HashJoinExec) runJoinWorker(workerID uint, outerKeyColIdx []int) {
 		dest: e.outerResultChs[workerID],
 	}
 
-	outerKeyAllTypes := make([]*types.FieldType, len(e.outerKeys))
-	for i := range e.outerKeys {
-		outerKeyAllTypes[i] = e.outerKeys[i].RetType
+	outerKeyAllTypes := make([]*types.FieldType, 0, len(retTypes(e.outerSideExec)))
+	for _, tp := range retTypes(e.outerSideExec) {
+		outerKeyAllTypes = append(outerKeyAllTypes, tp.Clone())
 	}
+
+	fmt.Println(outerKeyAllTypes)
+	fmt.Println(outerKeyColIdx)
+
 	hCtx := &hashContext{
 		allTypes:  outerKeyAllTypes,
 		keyColIdx: outerKeyColIdx,
@@ -324,7 +332,6 @@ func (e *HashJoinExec) runJoinWorker(workerID uint, outerKeyColIdx []int) {
 	} else if joinResult.chk != nil && joinResult.chk.NumRows() == 0 {
 		e.joinChkResourceCh[workerID] <- joinResult.chk
 	}
-	fmt.Println("hello")
 }
 
 func (e *HashJoinExec) getNewJoinResult(workerID uint) (bool, *hashjoinWorkerResult) {
