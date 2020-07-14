@@ -15,6 +15,7 @@ package executor
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/pingcap/errors"
@@ -277,6 +278,53 @@ func (e *HashJoinExec) runJoinWorker(workerID uint, outerKeyColIdx []int) {
 	// You may pay attention to:
 	//
 	// - e.closeCh, this is a channel tells that the join can be terminated as soon as possible.
+	var (
+		outerSideResult *chunk.Chunk
+		selected        = make([]bool, 0, chunk.InitialCapacity)
+	)
+	ok, joinResult := e.getNewJoinResult(workerID)
+	if !ok {
+		return
+	}
+
+	emptyOuterSideResult := &outerChkResource{
+		dest: e.outerResultChs[workerID],
+	}
+
+	outerKeyAllTypes := make([]*types.FieldType, len(e.outerKeys))
+	for i := range e.outerKeys {
+		outerKeyAllTypes[i] = e.outerKeys[i].RetType
+	}
+	hCtx := &hashContext{
+		allTypes:  outerKeyAllTypes,
+		keyColIdx: outerKeyColIdx,
+	}
+	for ok := true; ok; {
+		select {
+		case <-e.closeCh:
+			return
+		case outerSideResult, ok = <-e.outerResultChs[workerID]:
+		}
+		if !ok {
+			break
+		}
+		ok, joinResult = e.join2Chunk(workerID, outerSideResult, hCtx, joinResult, selected)
+		if !ok {
+			break
+		}
+		outerSideResult.Reset()
+		emptyOuterSideResult.chk = outerSideResult
+		e.outerChkResourceCh <- emptyOuterSideResult
+	}
+
+	if joinResult == nil {
+		return
+	} else if joinResult.err != nil || (joinResult.chk != nil && joinResult.chk.NumRows() > 0) {
+		e.joinResultCh <- joinResult
+	} else if joinResult.chk != nil && joinResult.chk.NumRows() == 0 {
+		e.joinChkResourceCh[workerID] <- joinResult.chk
+	}
+	fmt.Println("hello")
 }
 
 func (e *HashJoinExec) getNewJoinResult(workerID uint) (bool, *hashjoinWorkerResult) {
